@@ -1,11 +1,26 @@
 ﻿using System;
+using System.Collections.Generic;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 
 namespace MazeLibrary.Tests
 {
     [TestFixture]
     public class MazeSolverTests
     {
+        private static readonly List<Point> List = new List<Point>
+        {
+            new Point(3, 5),
+            new Point(3, 4),
+            new Point(3, 3),
+            new Point(4, 3),
+            new Point(4, 2),
+            new Point(4, 1),
+            new Point(3, 1),
+            new Point(2, 1),
+            new Point(1, 1),
+            new Point(1, 0)};
+
         private readonly int[] startXs = { 3, 0, 1, 0 };
 
         private readonly int[] startYs = { 5, 4, 0, 1 };
@@ -59,7 +74,7 @@ namespace MazeLibrary.Tests
                 { -1,  0, -1, -1, -1, -1,  0, -1,  0, -1,  0, -1 },
                 { -1,  0,  0,  0,  0,  0,  0, -1,  0,  0,  0, -1 },
                 { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }
-            }          
+            }
         };
 
         private readonly int[][,] result = new int[][,]
@@ -133,17 +148,77 @@ namespace MazeLibrary.Tests
             {
                 MazeSolver solver = new MazeSolver(sourceData[i], startXs[i], startYs[i]);
 
-                solver.MazeWithPass();
+                solver.PassMaze();
 
                 if (!MatrixAreEquals(solver.MazeWithPass(), result[i]))
                 {
-                    //TODOB
-                    
+                    Assert.Fail();
                 }
+
+                Assert.Pass();
             }
         }
 
-        private static bool MatrixAreEquals(int[,] lhs, int[,] rhs) => throw new NotImplementedException();
+        [Test]
+        public void PassMazeAndStructReturn()
+        {
+            var solver = new MazeSolver(result[0], 3, 5);
 
+            solver.PassMaze();
+
+            if (!PointAreEquals(solver.PointsForExit(), List))
+            {
+                Assert.Fail();
+            }
+
+            Assert.Pass();
+
+        }
+
+        private static bool PointAreEquals(List<Point> lhs, List<Point> rhs)
+        {
+   
+
+            if ((lhs.Count != rhs.Count))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < lhs.Count; i++)
+            {
+                if (lhs[i].X != rhs[i].X || lhs[i].Y != rhs[i].Y)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool MatrixAreEquals(int[,] lhs, int[,] rhs)
+        {
+            int lhsLength = lhs.GetUpperBound(0) + 1;
+            int lhsWidth = lhs.Length / lhsLength;
+            int rhsLength = rhs.GetUpperBound(0) + 1;
+            int rhsWidth = rhs.Length / rhsLength;
+
+            if ((lhsLength != rhsLength) || (lhsWidth != rhsWidth))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < lhsLength; i++)
+            {
+                for (int j = 0; j < lhsWidth; j++)
+                {
+                    if (lhs[i, j] != rhs[i, j])
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
     }
 }

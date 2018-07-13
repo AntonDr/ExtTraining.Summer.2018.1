@@ -1,27 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace MazeLibrary
 {
+    /// <summary>
+    /// Class for work with maze
+    /// </summary>
     public class MazeSolver
     {
         private readonly int startY;
         private readonly int startX;
-        private Point previous;
-        private Point next = new Point();
-        private int p = WAY;
-        private int length, width;
-        private static readonly int WALK = -WALK;
-        private static readonly int WAY = WAY;
-
-        private List<Point> badPoint = new List<Point>();
-
-        private static int inc = WALK;
-        private static int k = WAY;
-        private static int[][] temp;
-
-        private int[,] mazeModel;
-
+        private readonly int length;
+        private readonly int width;
+        private readonly int[,] mazeModel;
+        
         public MazeSolver(int[,] mazeModel, int startX, int startY)
         {
             this.startY = startY;
@@ -31,8 +24,9 @@ namespace MazeLibrary
 
             length = (int) Math.Sqrt(mazeModel.Length);
             width = (int) Math.Sqrt(mazeModel.Length);
+            
 
-            this.mazeModel = new int[(int) Math.Sqrt(mazeModel.Length), (int) Math.Sqrt(mazeModel.Length)];
+            this.mazeModel = new int[length,width];
 
             Array.Copy(mazeModel, this.mazeModel, mazeModel.Length);
 
@@ -40,87 +34,104 @@ namespace MazeLibrary
 
         public int[,] MazeWithPass()
         {
-            int[,] newMaze = new int[(int) Math.Sqrt(mazeModel.Length), (int) Math.Sqrt(mazeModel.Length)];
-
-            Steps(startX,startY,null);
-
-            Array.Copy(mazeModel, newMaze, mazeModel.Length);
-
-            return newMaze;
+            return (int[,])mazeModel.Clone();
         }
 
-        public void PassMaze() => throw new NotImplementedException();
-
-        public void Steps(int x, int y,string laststep)
+        public List<Point> PointsForExit()
         {
-            while (true)
+            var pList = new List<Point>();
+
+            int max = 0;
+
+            for (int i = 0; i < length; i++)
             {
-       
-                int savex = x;
-                int saveY = y;
-                if (y == mazeModel.GetLength(WAY) - 1)
-                { 
-                    break;
-                }
-                else
+                for (int j = 0; j < width; j++)
                 {
-
-                    if (mazeModel[y, x - WALK] == WAY && laststep != "right")
+                    if (mazeModel[i,j]>max)
                     {
-                        savex = x;
-                        saveY = y;
-                        x--;
-                        laststep = "left";
-                        if (mazeModel[y - WALK, x] == WALK && mazeModel[y, x + WALK] == WALK && mazeModel[y + WALK, x] == WALK)
-                            laststep = null;
-                        Steps(x, y, laststep);
+                        max = mazeModel[i,j];
                     }
-                    else
-                    {
-                        if (mazeModel[y, x + WALK] == WAY && laststep != "left")
-                        {
-                            savex = x;
-                            saveY = y;
-                            x++;
-                            if (mazeModel[y + WALK, x] == WALK && mazeModel[y - WALK, x] == WALK && mazeModel[y, x - WALK] == WALK)
-                                laststep = null;
-                            Steps(x, y, laststep);
-                        }
-                        else
-                        {
-                            if (mazeModel[y - WALK, x] == WAY && laststep != "down")
-                            {
-                                savex = x;
-                                saveY = y;
-                                y--;
-                                laststep = "up";
-                                if (mazeModel[y + WALK, x] == WALK && mazeModel[y, x + WALK] == WALK && mazeModel[y, x - WALK] == WALK)
-                                    laststep = null;
-                                Steps(x, y,laststep);
-                            }
-                            else
-                            {
-                                if (mazeModel[y + WALK, x] == WAY && laststep != "up")
-                                {
-                                    savex = x;
-                                    saveY = y;
-                                    y++;
-                                    laststep = "down";
-                                    if (mazeModel[y - WALK, x] == WALK && mazeModel[y, x + WALK] == WALK && mazeModel[y, x - WALK] == WALK)
-                                        laststep = null;
-                                    Steps(x, y, laststep);
-                                }
-                                else
-                                {
+                }
+            }
 
-                                    laststep = null;
-                                    Steps(savex, saveY, laststep);
-                                }
-                            }
+            for (int i = 1; i <= max; i++)
+            {
+                for (int j = 0; j < length; j++)
+                {
+                    for (int k = 0; k < width; k++)
+                    {
+                        if (i==mazeModel[j,k])
+                        {
+                            pList.Add(new Point(j,k));
+                            
                         }
                     }
                 }
             }
+
+            return pList;
+
+
+        }
+
+        public void PassMaze() => FindAWay();
+
+        private void FindAWay()
+        {
+            int n = length;
+            int m = width;
+
+            bool[,] mapBools = new bool[n, m];
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    mapBools[i, j] = (mazeModel[i, j] == 0);
+                }
+            }
+
+            int inc = 1;
+
+            NextStep(mapBools,startX, startY, inc);
+        }
+
+        private bool NextStep(bool [,] map,int x, int y, int inc)
+        {
+
+            if (!(x == startX && y == startY))
+            {
+                if (x < 0 || y < 0)
+                {
+                    return true;
+                }
+
+                if (x >= length || y >= width)
+                {
+                    return true;
+                }
+
+                if (!map[x, y])
+                {
+                    return false;
+                }
+            }
+
+            map[x, y] = false;
+
+            var up = NextStep(map,x + 1, y, inc+1);
+            var down = NextStep(map,x - 1, y, inc+1);
+            var right = NextStep(map,x, y + 1, inc + 1);
+            var left = NextStep(map,x, y - 1, inc + 1);
+
+            if (up || down || right || left)
+            { 
+                mazeModel[x, y] = inc;
+               
+                return true;
+            }
+
+            return false;
         }
 
         private void Validate(int[,] mazeModel, int startX, int startY)
@@ -130,33 +141,29 @@ namespace MazeLibrary
                 throw new ArgumentNullException($"{nameof(mazeModel)}");
             }
 
-            if (mazeModel.Length==WAY)
+            if (mazeModel.Length==0)
             {
                 throw new ArgumentException();
             }
 
-            if (startX < WAY || startX>mazeModel.Length || startY<WAY || startY>mazeModel.Length)
+            if (startX < 0 || startX>mazeModel.Length || startY<0 || startY>mazeModel.Length)
             {
                 throw new ArgumentException();
             }
         }
-
-
     }
 
-    struct Point
+    public struct Point
     {
-        public int x, y;
+        private int x, y;
 
-        public bool flag;
-
-        public Point(int x,int y)
+        public Point(int x,int y) : this()
         {
-            this.x = x;
-            this.y = y;
-            flag = false;
+            X = x;
+            Y = y;
         }
 
-        
+        public int X { get => x; set => x = value; }
+        public int Y { get => y; set => y = value; }
     }
 }
